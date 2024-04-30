@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Configures the load balancer
+
+# Install HAproxy
+
+if [ "$(which haproxy)" == "" ]
+then
+	sudo apt-get -y upgrade && \
+	sudo apt-get -y install --no-install-recommends software-properties-common && \
+	sudo add-apt-repository -y ppa:vbernat/haproxy-2.8 && \
+	sudo apt-get -y install haproxy=2.8.\*
+fi
+
+# Edit the config file
+config="
+global
+	h1-case-adjust content-length Content-Length
+	h1-case-adjust server Server
+	h1-case-adjust date Date
+	h1-case-adjust content-type Content-Type
+	h1-case-adjust content-length Content-Length
+	h1-case-adjust last-modified Last-Modified
+	h1-case-adjust connection Connection
+	h1-case-adjust etag Etag
+	h1-case-adjust x-served-by X-Served-By
+	h1-case-adjust accept-ranges Accept-Ranges
+
+defaults
+	mode http
+	timeout client 10s
+	timeout connect 5s
+	timeout server 10s 
+	timeout http-request 10s
+
+frontend myfrontend
+	option h1-case-adjust-bogus-client
+	bind *:80
+	mode http
+	default_backend webservers
+
+backend webservers
+	option h1-case-adjust-bogus-server
+	balance roundrobin
+	server 531607-web-01 100.26.136.10:80 check
+	server 531607-web-02 54.236.52.202:80 check
+"
+
+echo "$config" | sudo tee -a /etc/haproxy/haproxy.cfg
+
+# Ensure haproxy can be managed by an init script
+echo "ENABLED=1" | sudo tee -a /etc/default/haproxy
+
+# Restart haproxy
+sudo service haproxy restart
