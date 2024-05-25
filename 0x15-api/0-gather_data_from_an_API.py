@@ -1,4 +1,4 @@
-#!user/bin/python3
+#!usr/bin/python3
 """
 Write a Python script that uses REST API that returns information about a given employee's completed tasks.
 """
