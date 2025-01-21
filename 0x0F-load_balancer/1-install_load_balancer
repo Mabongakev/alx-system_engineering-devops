@@ -1,54 +1,63 @@
 #!/usr/bin/env bash
-# Configures the load balancer
+# install load balancer
 
-# Install HAproxy
 
-if [ "$(which haproxy)" == "" ]
-then
-	sudo apt-get -y upgrade && \
-	sudo apt-get -y install --no-install-recommends software-properties-common && \
-	sudo add-apt-repository -y ppa:vbernat/haproxy-2.8 && \
-	sudo apt-get -y install haproxy=2.8.\*
-fi
+echo -e "Updating and doing some minor checks...\n"
 
-# Edit the config file
-config="
-global
-	h1-case-adjust content-length Content-Length
-	h1-case-adjust server Server
-	h1-case-adjust date Date
-	h1-case-adjust content-type Content-Type
-	h1-case-adjust content-length Content-Length
-	h1-case-adjust last-modified Last-Modified
-	h1-case-adjust connection Connection
-	h1-case-adjust etag Etag
-	h1-case-adjust x-served-by X-Served-By
-	h1-case-adjust accept-ranges Accept-Ranges
+function install() {
+	command -v "$1" &> /dev/null
 
+	#shellcheck disable=SC2181
+	if [ $? -ne 0 ]; then
+		echo -e "	Installing: $1\n"
+		sudo apt-get update -y -qq && \
+			sudo apt-get install -y "$1" -qq
+		echo -e "\n"
+	else
+		echo -e "	${1} is already installed.\n"
+	fi
+}
+
+install haproxy #install haproxy
+
+echo -e "\nSetting up some minor stuff.\n"
+
+# backup default server config file
+sudo cp /etc/haproxy/haproxy.cfg haproxy_default.backup
+
+server_config=\
+"
 defaults
-	mode http
-	timeout client 10s
-	timeout connect 5s
-	timeout server 10s 
-	timeout http-request 10s
+  mode http
+  timeout client 15s
+  timeout connect 10s
+  timeout server 15s
+  timeout http-request 10s
 
-frontend myfrontend
-	option h1-case-adjust-bogus-client
-	bind *:80
-	mode http
-	default_backend webservers
+frontend kevbytes.tech-frontend
+    bind *:80
+    default_backend kevbytes.tech-backend
 
-backend webservers
-	option h1-case-adjust-bogus-server
-	balance roundrobin
-	server 531607-web-01 100.26.136.10:80 check
-	server 531607-web-02 54.236.52.202:80 check
+backend kevbytes.tech-backend
+    balance roundrobin
+    server 531563-web-01 35.153.16.77:80 check
+    server 531563-web-02 52.23.212.184:80 check
 "
 
-echo "$config" | sudo tee -a /etc/haproxy/haproxy.cfg
+# shellcheck disable=SC2154
+echo "$server_config" | sudo dd status=none of=/etc/haproxy/haproxy.cfg
 
-# Ensure haproxy can be managed by an init script
-echo "ENABLED=1" | sudo tee -a /etc/default/haproxy
+# enable haproxy to be started by init script
+echo "ENABLED=1" | sudo dd status=none of=/etc/default/haproxy
 
-# Restart haproxy
-sudo service haproxy restart
+echo "configured - Roundrobin On web-01 & web-02"
+
+if [ "$(pgrep -c haproxy)" -le 0 ]; then
+	sudo service haproxy start
+else
+	sudo service haproxy restart
+fi
+
+echo -e "web-01 web-02"
+echo "web-01"
+echo "web-02"
