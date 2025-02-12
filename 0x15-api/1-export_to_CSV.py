@@ -1,8 +1,4 @@
 #!/usr/bin/python3
-# Using what you did in the task #0, extend
-# your Python script to export data in the CSV format.
-
-#!/usr/bin/python3
 
 """
 Using what you did in the task #0, extend your Python script
@@ -14,12 +10,11 @@ Requirements:
     - File name must be: USER_ID.csv
 """
 
-import json
 import requests
 import sys
 
 
-def employee_todos_to_json(id):
+def employee_todos_to_csv(id):
     """
     Gets todos belonging to employee with given id
     """
@@ -40,14 +35,16 @@ def employee_todos_to_json(id):
     name = employee_response.json().get('username')
     todos = todos_response.json()
 
-    tasks_list = [{"task": task.get('title'), "completed":
-                   task.get('completed'), "username": name} for task in todos]
+    csv_data = ""
 
-    json_data = {id: tasks_list}
+    for task in todos:
+        csv_data += "\"{}\",\"{}\",\"{}\",\"{}\"\n".format(
+            id, name, task.get('completed'), task.get('title'))
 
-    with open(f"{id}.json", "w+") as json_file:
-        json.dump(json_data, json_file)
+    with open(f"{id}.csv", "w+") as csvfile:
+        csvfile.write(csv_data)
 
 
 if __name__ == "__main__":
-    employee_todos_to_json(sys.argv[1])
+    employee_todos_to_csv(sys.argv[1])
+
