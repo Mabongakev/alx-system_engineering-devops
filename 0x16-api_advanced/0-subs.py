@@ -21,18 +21,27 @@ Requirements:
 from requests import get
 
 def number_of_subscribers(subreddit):
-    """Returns the number of subscribers for a given subreddit.
-    If the subreddit is invalid, returns 0.
     """
-    url = f"https://www.reddit.com/r/{subreddit}/about.json"
-    headers = {
-        "User-Agent": "MyRedditBot/1.0"
-    }
+    Returns the number of subscribers in a subreddit
 
-    response = requests.get(url, headers=headers, allow_redirects=False)
+    Params:
+        subreddit (str): The name of the subreddit
 
-    if response.status_code == 200:
-        data = response.json()
-        return data["data"]["subscribers"]
-    else:
+    Return:
+        The number of subscribers if the subreddit exists, 0 otherwise
+    """
+
+    if subreddit is None or not isinstance(subreddit, str):
         return 0
+
+    response = get(
+        'https://www.reddit.com/r/{}/about.json'.format(subreddit),
+        allow_redirects=False)
+
+    if response.ok:
+        try:
+            subscriber_count = response.json().get('data').get('subscribers')
+        except Exception:
+            return 0
+
+    return subscriber_count
