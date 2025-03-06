@@ -1,0 +1,10 @@
+server {
+    listen 80;
+    listen 127.0.0.1;
+    server_name 100.26.136.10;
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/home/ubuntu/AirBnB_clone_v2/hbnb.sock;
+    }
+}
